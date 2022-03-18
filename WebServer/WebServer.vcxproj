@@ -139,7 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cweb.cpp" />
     <ClCompile Include="WebServer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="cweb.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
