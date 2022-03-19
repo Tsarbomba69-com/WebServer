@@ -27,6 +27,7 @@ int main() {
 	{
 		puts("Connection accepted");
 		get("", new_socket);
+		closesocket(new_socket);
 		//request();
 		//struct tm newtime;
 		//time_t now = time(0);
@@ -56,7 +57,7 @@ int main() {
 		return EXIT_FAILURE;
 	}
 
-	closesocket(SERVER_SOCKET);
+	//closesocket(SERVER_SOCKET);
 	WSACleanup();
 
 	return EXIT_SUCCESS;

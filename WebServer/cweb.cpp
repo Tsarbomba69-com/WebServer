@@ -72,23 +72,28 @@ int start_server(int PORT, void (*callback)(void)) {
 
 
 int get(const char* uri, SOCKET new_socket) {
-#define BUF_SIZE 1024
+#define BUF_SIZE 105536
+	char* html = render_html("login.html");
 	char buf[BUF_SIZE];
 	strcpy_s(buf, BUF_SIZE, "HTTP/1.1 200 OK\r\n");
 	strcat_s(buf, BUF_SIZE, "Connection: keep-alive\r\n");
 	strcat_s(buf, BUF_SIZE, "Connection: keep-alive\r\n");
 	strcat_s(buf, BUF_SIZE, "Content-Type: text/html\r\n");
-	strcat_s(buf, BUF_SIZE, "Content-Length: 1024\r\n");
+	strcat_s(buf, BUF_SIZE, "Content-Length: ");
+	char content_len[10];
+	_itoa(strlen(html), content_len, 10);
+	strcat_s(buf, BUF_SIZE, content_len);
+	strcat_s(buf, BUF_SIZE, "\r\n");
 	strcat_s(buf, BUF_SIZE, "\r\n");
 	handle_http_request(new_socket);
-	char* html = render_html("C:\\Users\\hp\\Documents\\Web Server\\WebServer\\x64\\Debug\\templates\\login.html");
-	//strcat_s(message, strlen(html), html);
+	strcat_s(buf, BUF_SIZE, html);
 
-	//if (send(new_socket, message, (int)strlen(message), 0) < 0)
-	//{
-	//	puts("Send failed");
-	//	return EXIT_FAILURE;
-	//}
+	if (send(new_socket, buf, (int)strlen(buf), 0) == SOCKET_ERROR) {
+		wprintf(L"send failed with error: %d\n", WSAGetLastError());
+		closesocket(new_socket);
+		WSACleanup();
+		return 1;
+	}
 
 	return 0;
 }
@@ -97,22 +102,24 @@ char* render_html(const char* path) {
 	FILE* file = NULL;
 	int err;
 
-	if ((err = fopen_s(&file, path, "r")) != 0)
+	if ((err = fopen_s(&file, path, "rb")) != 0 && file == NULL)
 	{
 		perror("Error: ");
 	}
+	else {
+#define BUF_SIZE 65536
+		char string[100];
+		static char buffer[BUF_SIZE];
+		char chr;
 
-	fseek(file, 0L, SEEK_END);
-	long sz = ftell(file);
-	char string[1024];
-	static char buffer[5000];
+		while (fgets(string, sizeof(string), file)) //Pega cada linha do texto
+		{
+			strcat_s(buffer, BUF_SIZE, string);
+		}
 
-	while (fgets(string, sz, file)) //Pega cada linha do texto
-	{
-		strcat_s(buffer, sz, string);
+		fclose(file);
+		return buffer;
 	}
-
-	return buffer;
 }
 
 struct Request handle_http_request(SOCKET new_socket)
