@@ -2,13 +2,6 @@
 
 SOCKET SERVER_SOCKET, CLIENT_SOCKET = INVALID_SOCKET;
 
-struct Request {
-	char* header;
-	char* content_type;
-	void* body;
-	int content_length;
-};
-
 
 int start_server(int PORT, void (*callback)(void)) {
 	WSADATA wsaData;
@@ -71,34 +64,20 @@ int start_server(int PORT, void (*callback)(void)) {
 }
 
 
-int get(const char* uri, SOCKET new_socket) {
-#define BUF_SIZE 105536
-	char* html = render_html("login.html");
-	char buf[BUF_SIZE];
-	strcpy_s(buf, BUF_SIZE, "HTTP/1.1 200 OK\r\n");
-	strcat_s(buf, BUF_SIZE, "Connection: keep-alive\r\n");
-	strcat_s(buf, BUF_SIZE, "Connection: keep-alive\r\n");
-	strcat_s(buf, BUF_SIZE, "Content-Type: text/html\r\n");
-	strcat_s(buf, BUF_SIZE, "Content-Length: ");
-	char content_len[10];
-	_itoa(strlen(html), content_len, 10);
-	strcat_s(buf, BUF_SIZE, content_len);
-	strcat_s(buf, BUF_SIZE, "\r\n");
-	strcat_s(buf, BUF_SIZE, "\r\n");
-	handle_http_request(new_socket);
-	strcat_s(buf, BUF_SIZE, html);
+int get(const char* uri, SOCKET new_socket, void (*callback)(struct Request, struct Response)) {
+	char* html = render_template("login.html");
 
-	if (send(new_socket, buf, (int)strlen(buf), 0) == SOCKET_ERROR) {
-		wprintf(L"send failed with error: %d\n", WSAGetLastError());
-		closesocket(new_socket);
-		WSACleanup();
-		return 1;
-	}
-
+	callback(handle_http_request(new_socket), send_response(
+		new_socket,
+		"Connection: keep-alive\r\n",
+		"Content-Type: text/html\r\n",
+		html,
+		strlen(html)
+	));
 	return 0;
 }
 
-char* render_html(const char* path) {
+char* render_template(const char* path) {
 	FILE* file = NULL;
 	int err;
 
@@ -138,23 +117,38 @@ struct Request handle_http_request(SOCKET new_socket)
 	return req;
 }
 
-int send_response(int fd, char* header, char* content_type, void* body, int content_length)
+struct Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
 {
 	const int max_response_size = 262144;
 	char response[max_response_size];
+	char content_len_buffer[10];
 
 	// Build HTTP response and store it in response
-
-	///////////////////
-	// IMPLEMENT ME! //
-	///////////////////
+	strcpy_s(response, max_response_size, "HTTP/1.1 200 OK\r\n");
+	strcat_s(response, max_response_size, header);
+	strcat_s(response, max_response_size, content_type);
+	strcat_s(response, max_response_size, "Content-Length: ");
+	sprintf_s(content_len_buffer, sizeof(content_len_buffer), "%d", content_length);
+	strcat_s(response, max_response_size, content_len_buffer);
+	strcat_s(response, max_response_size, "\r\n");
+	strcat_s(response, max_response_size, "\r\n");
+	strcat_s(response, max_response_size, (char*)body);
 
 	// Send it all!
-	int rv = send(fd, response, max_response_size, 0);
-
-	if (rv < 0) {
-		perror("send");
+	if (send(new_socket, response, (int)strlen(response), 0) == SOCKET_ERROR) {
+		perror("ERROR: send");
+		wprintf(L"send failed with error: %d\n", WSAGetLastError());
+		closesocket(new_socket);
+		WSACleanup();
 	}
 
-	return rv;
+	struct Response res = {};
+	res.body = (char*)malloc(sizeof(body));
+	res.content_type = (char*)malloc(sizeof(content_type));
+	res.header = (char*)malloc(sizeof(header));
+	res.status_code = 200;
+	res.content_length = content_length;
+	strcpy_s(res.content_type, strlen(content_type) + 1, content_type);
+	strcpy_s(res.header, strlen(header) + 1, header);
+	return res;
 }

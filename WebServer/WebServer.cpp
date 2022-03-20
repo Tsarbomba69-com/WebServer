@@ -9,6 +9,10 @@ void log() {
 	printf("Serving on: http://localhost:%i\n", 8801);
 }
 
+void business_rule(struct Request req, struct Response res) {
+	printf("status code: %i\n", res.status_code);
+}
+
 
 
 int main() {
@@ -26,7 +30,7 @@ int main() {
 	while ((new_socket = accept(SERVER_SOCKET, (struct sockaddr*)&CLIENT_SOCKET, &c)) != INVALID_SOCKET)
 	{
 		puts("Connection accepted");
-		get("", new_socket);
+		get("", new_socket, business_rule);
 		closesocket(new_socket);
 		//request();
 		//struct tm newtime;
