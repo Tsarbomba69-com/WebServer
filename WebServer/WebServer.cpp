@@ -3,20 +3,22 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define DEFAULT_PORT "8026"
+#define DEFAULT_PORT 8080
 
 void log() {
-	printf("Serving on: http://localhost:%i\n", 8801);
+	printf("Serving on: http://localhost:%i\n", DEFAULT_PORT);
 }
 
 void business_rule(struct Request req, struct Response res) {
 	printf("status code: %i\n", res.status_code);
+	printf("METHOD: %s\n", req.method);
+	printf("uri: %s\n", req.uri);
 }
 
 
 
 int main() {
-	start_server(8080, log);
+	start_server(DEFAULT_PORT, log);
 	SOCKET new_socket;
 	int c;
 	const char* message;

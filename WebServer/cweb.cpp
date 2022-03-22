@@ -64,7 +64,7 @@ int start_server(int PORT, void (*callback)(void)) {
 }
 
 
-int get(const char* uri, SOCKET new_socket, void (*callback)(struct Request, struct Response)) {
+int get(const char* uri, SOCKET new_socket, void (*callback)(Request, Response)) {
 	char* html = render_template("login.html");
 
 	callback(handle_http_request(new_socket), send_response(
@@ -113,8 +113,35 @@ struct Request handle_http_request(SOCKET new_socket)
 		perror("recv");
 	}
 
-	struct Request req = {};
+	for (int i = 0; i < strlen(request) - 2; i++)
+	{
+		if (request[i] == '\n' && request[i + 1] == '\n')
+		{
+			// This makes it possible to separate header fields from the request body.
+			request[i + 1] = '|';
+		}
+	}
+
+	// Separate the request string.
+	char* request_line = strtok(request, "\n");
+	char* header_fields = strtok(NULL, "|");
+	char* body = strtok(NULL, "|");
+	struct Request req = {}; 
+	extract_request_line_fields(&req, request_line, strlen(request_line));
 	return req;
+}
+
+void extract_request_line_fields(struct Request* request, char* request_line, size_t length) {
+	// Copy the string literal into a local instance.
+	char* fields = (char*) malloc(length * sizeof(char));
+	strcpy(fields, request_line);
+	// Separate the string on spaces for each section.
+	char* method = strtok(fields, " ");
+	char* uri = strtok(NULL, " ");
+	char* http_version = strtok(NULL, "\0");
+	request->method = method;
+	request->uri = uri;
+	request->http_version = http_version;
 }
 
 struct Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
