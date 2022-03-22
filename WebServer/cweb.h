@@ -5,11 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include "dict.h"
+#include "list.h"
 
 typedef struct Request {
 	char* method;
 	char* uri;
-	char* header;
+	Dict** headers;
 	char* content_type;
 	char* http_version;
 	void* body;
@@ -30,9 +32,13 @@ int get(const char* uri, SOCKET new_socket, void (*callback)(Request, Response))
 
 char* render_template(const char* file_path);
 
+char** parseString(char* cmd);
+
 struct Request handle_http_request(SOCKET new_socket);
 
 void extract_request_line_fields(struct Request* request, char* request_line, size_t length);
 
-struct Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length);
+void extract_header_fields(Request* request, char* header_fields, size_t length);
+
+Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length);
 

@@ -13,6 +13,7 @@ void business_rule(struct Request req, struct Response res) {
 	printf("status code: %i\n", res.status_code);
 	printf("METHOD: %s\n", req.method);
 	printf("uri: %s\n", req.uri);
+	printf("Host: %s\n", getItem(*req.headers, (char*)"Host"));
 }
 
 

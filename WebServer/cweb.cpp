@@ -126,14 +126,15 @@ struct Request handle_http_request(SOCKET new_socket)
 	char* request_line = strtok(request, "\n");
 	char* header_fields = strtok(NULL, "|");
 	char* body = strtok(NULL, "|");
-	struct Request req = {}; 
+	struct Request req = {};
 	extract_request_line_fields(&req, request_line, strlen(request_line));
+	extract_header_fields(&req, header_fields, strlen(header_fields));
 	return req;
 }
 
 void extract_request_line_fields(struct Request* request, char* request_line, size_t length) {
 	// Copy the string literal into a local instance.
-	char* fields = (char*) malloc(length * sizeof(char));
+	char* fields = (char*)malloc(length * sizeof(char));
 	strcpy(fields, request_line);
 	// Separate the string on spaces for each section.
 	char* method = strtok(fields, " ");
@@ -144,7 +145,46 @@ void extract_request_line_fields(struct Request* request, char* request_line, si
 	request->http_version = http_version;
 }
 
-struct Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
+void extract_header_fields(Request* request, char* header_fields, size_t length) {
+	request->headers = dictAlloc();
+	char* fields = (char*)malloc(length * sizeof(char));
+	strcpy(fields, header_fields);
+
+	// Save each line of the input into a linked-list.
+	struct LinkedList headers = linked_list_constructor();
+	char* field = strtok(fields, "\n");
+	int i = 0;
+	while (field)
+	{
+		insert(&headers, i++, field, strlen(field) * sizeof(char));
+		field = strtok(NULL, "\n");
+	}
+
+	//// Initialize the request's headers dictionary.
+	request->headers = dictAlloc();
+	//// Use the queue to further extract key value pairs.
+	for (int i = 0; i < headers.length - 1; i++) {
+		char* header = (char*)(iterate(&headers, i))->data;
+		char* key = strtok(header, ":");
+		char* value = strtok(NULL, "\r");
+
+		if (value)
+		{
+			// Remove leading white spaces.
+			if (value[0] == ' ')
+			{
+				value++;
+			}
+			// Push the key value pairs into the request's headers dictionary.
+			addItem(request->headers, key, value);
+			// Collect the next field from the queue.
+		}
+	}
+
+	//// Destroy the linked-list
+}
+
+Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
 {
 	const int max_response_size = 262144;
 	char response[max_response_size];
