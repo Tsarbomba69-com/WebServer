@@ -6,7 +6,7 @@ Dict** dictAlloc(void) {
 
 void addItem(Dict** dict, char* key, void* value) {
 	//delItem(dict, key); /* If we already have a item with this key, delete it. */
-	Dict* d = (Dict*)malloc(sizeof(struct Dict));
+	Dict* d = (Dict*)malloc(sizeof(Dict));
 	d->key = (char*)malloc(strlen(key) + 1);
 	strcpy(d->key, key);
 	d->value = value;
@@ -15,8 +15,7 @@ void addItem(Dict** dict, char* key, void* value) {
 }
 
 void* getItem(Dict* dict, char* key) {
-	Dict* ptr;
-	for (ptr = dict; ptr != NULL; ptr = ptr->next) {
+	for (Dict* ptr = dict; ptr != NULL; ptr = ptr->next) {
 		if (strcmp(ptr->key, key) == 0) {
 			return ptr->value;
 		}

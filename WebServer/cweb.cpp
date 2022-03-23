@@ -1,6 +1,7 @@
 #include "cweb.h"
 
 SOCKET SERVER_SOCKET, CLIENT_SOCKET = INVALID_SOCKET;
+Dict** ROUTES = dictAlloc();
 
 
 int start_server(int PORT, void (*callback)(void)) {
@@ -60,21 +61,48 @@ int start_server(int PORT, void (*callback)(void)) {
 		return EXIT_FAILURE;
 	}
 	callback();
+	SOCKET new_socket;
+	int c = sizeof(struct sockaddr_in);
+
+	//Accept and incoming connection
+	puts("Waiting for incoming connections...");
+
+	while ((new_socket = accept(SERVER_SOCKET, (struct sockaddr*)&CLIENT_SOCKET, &c)) != INVALID_SOCKET)
+	{
+		accept_request(new_socket);
+		puts("Connection accepted");
+		closesocket(new_socket);
+	}
+
+	if (new_socket == INVALID_SOCKET)
+	{
+		printf("accept failed with error code : %d", WSAGetLastError());
+		return EXIT_FAILURE;
+	}
+
+	//closesocket(SERVER_SOCKET);
+	WSACleanup();
 	return EXIT_SUCCESS;
 }
 
 
-int get(const char* uri, SOCKET new_socket, void (*callback)(Request, Response)) {
-	char* html = render_template("login.html");
+int get(const char* uri, void (*callback)(Request*, Response*)) {
+	addItem(ROUTES, (char*)uri, callback);
+	return 0;
+}
 
-	callback(handle_http_request(new_socket), send_response(
+void accept_request(SOCKET new_socket) {
+	Request req = handle_http_request(new_socket);
+	char* html = render_template("login.html");
+	Response res = send_response(
 		new_socket,
 		"Connection: keep-alive\r\n",
 		"Content-Type: text/html\r\n",
 		html,
 		strlen(html)
-	));
-	return 0;
+	);
+	void* callback = (void*)getItem(*ROUTES, req.uri);
+	if (callback)((void(*)(Request*, Response*))callback)(&req, &res);
 }
 
 char* render_template(const char* path) {
@@ -126,9 +154,9 @@ struct Request handle_http_request(SOCKET new_socket)
 	char* request_line = strtok(request, "\n");
 	char* header_fields = strtok(NULL, "|");
 	char* body = strtok(NULL, "|");
-	struct Request req = {};
+	struct Request req;
 	extract_request_line_fields(&req, request_line, strlen(request_line));
-	extract_header_fields(&req, header_fields, strlen(header_fields));
+	if (header_fields != NULL) extract_header_fields(&req, header_fields, strlen(header_fields));
 	return req;
 }
 
@@ -146,7 +174,6 @@ void extract_request_line_fields(struct Request* request, char* request_line, si
 }
 
 void extract_header_fields(Request* request, char* header_fields, size_t length) {
-	request->headers = dictAlloc();
 	char* fields = (char*)malloc(length * sizeof(char));
 	strcpy(fields, header_fields);
 
@@ -209,7 +236,7 @@ Response send_response(SOCKET new_socket, const char* header, const char* conten
 		WSACleanup();
 	}
 
-	struct Response res = {};
+	struct Response res;
 	res.body = (char*)malloc(sizeof(body));
 	res.content_type = (char*)malloc(sizeof(content_type));
 	res.header = (char*)malloc(sizeof(header));

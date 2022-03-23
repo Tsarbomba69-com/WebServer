@@ -6,7 +6,7 @@
 typedef struct Dict {
 	char* key;
 	void* value;
-	Dict* next;
+	Dict* next = NULL;
 } Dict;
 
 
