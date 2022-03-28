@@ -11,7 +11,7 @@
 typedef struct Request {
 	char* method;
 	char* uri;
-	Dict** headers;
+	Dictionary headers;
 	char* content_type;
 	char* http_version;
 	void* body;

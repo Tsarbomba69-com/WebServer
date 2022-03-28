@@ -2,7 +2,7 @@
 
 
 // The constructor is used to create new instances of nodes.
-struct Node node_constructor(void* data, unsigned long size)
+Node node_constructor(void* data, unsigned long size)
 {
 	if (size < 1)
 	{
@@ -63,7 +63,7 @@ void insert(LinkedList* linked_list, int index, void* data, unsigned long size) 
 }
 
 // The remove function removes a node from the linked list.
-void remove_node(struct LinkedList* linked_list, int index)
+void remove_node(LinkedList* linked_list, int index)
 {
 	// Check if the item being removed is the head.
 	if (index == 0)
@@ -105,7 +105,7 @@ Node* create_node(void* data, unsigned long size)
 
 
 // The iterate function traverses the list from beginning to end.
-Node* iterate(struct LinkedList* linked_list, int index)
+Node* iterate(LinkedList* linked_list, int index)
 {
 	// Confirm the user has specified a valid index.
 	if (index < 0 || index >= linked_list->length)

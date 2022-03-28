@@ -9,8 +9,8 @@ typedef struct Node {
 	// The data is stored as a void pointer - casting is required for proper access.
 	void* data;
 	// A pointer to the next node in the chain.
-	struct Node* next;
-	struct Node* previous;
+	Node* next;
+	Node* previous;
 } Node;
 
 typedef struct LinkedList {
@@ -24,12 +24,14 @@ Node node_constructor(void* data, unsigned long size);
 
 void node_destructor(struct Node* node);
 
-void insert(struct LinkedList* linked_list, int index, void* data, unsigned long size);
+LinkedList linked_list_constructor();
+
+void insert(LinkedList* linked_list, int index, void* data, unsigned long size);
 
 Node* create_node(void* data, unsigned long size);
 
-Node* iterate(struct LinkedList* linked_list, int index);
+Node* iterate(LinkedList* linked_list, int index);
 
-void remove_node(struct LinkedList* linked_list, int index);
+void remove_node(LinkedList* linked_list, int index);
 
 LinkedList linked_list_constructor(void);

@@ -9,11 +9,24 @@ typedef struct Dict {
 	Dict* next = NULL;
 } Dict;
 
+typedef struct Pair {
+	char* key;
+	void* value;
+	Pair* next;
+} Pair;
 
-Dict** dictAlloc(void);
+typedef struct Dictionary {
+	Pair* head;
+	// Length refers to the number of nodes in the chain.
+	int length;
+} Dictionary;
 
-void addItem(Dict** dict, char* key, void* value);
+Dictionary dict_constructor(void);
 
-void delItem(Dict** dict, char* key);
+Pair pair_constructor(char* key, void* value, unsigned long size);
 
-void* getItem(Dict* dict, char* key);
+void insert_item(Dictionary* dict, char* key, void* value, unsigned long size);
+
+Pair* search_dict(Dictionary* dict, char* key);
+
+void* get_item(Dictionary* dict, char* key);

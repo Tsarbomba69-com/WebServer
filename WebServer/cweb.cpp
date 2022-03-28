@@ -1,7 +1,7 @@
 #include "cweb.h"
 
 SOCKET SERVER_SOCKET, CLIENT_SOCKET = INVALID_SOCKET;
-Dict** ROUTES = dictAlloc();
+Dictionary ROUTES = dict_constructor();
 
 
 int start_server(int PORT, void (*callback)(void)) {
@@ -87,7 +87,10 @@ int start_server(int PORT, void (*callback)(void)) {
 
 
 int get(const char* uri, void (*callback)(Request*, Response*)) {
-	addItem(ROUTES, (char*)uri, callback);
+	char buffer[1024];
+	strcpy(buffer, "GET");
+	strcat(buffer, uri);
+	insert_item(&ROUTES, buffer, callback, sizeof(ROUTES));
 	return 0;
 }
 
@@ -101,7 +104,11 @@ void accept_request(SOCKET new_socket) {
 		html,
 		strlen(html)
 	);
-	void* callback = (void*)getItem(*ROUTES, req.uri);
+	memset(html, 0, sizeof(html));
+	char buffer[1024];
+	strcpy(buffer, req.method);
+	strcat(buffer, req.uri);
+	void* callback = (void*)get_item(&ROUTES, buffer);
 	if (callback)((void(*)(Request*, Response*))callback)(&req, &res);
 }
 
@@ -129,7 +136,7 @@ char* render_template(const char* path) {
 	}
 }
 
-struct Request handle_http_request(SOCKET new_socket)
+Request handle_http_request(SOCKET new_socket)
 {
 	const int request_buffer_size = 65536; // 64K
 	static char request[request_buffer_size];
@@ -188,7 +195,7 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 	}
 
 	//// Initialize the request's headers dictionary.
-	request->headers = dictAlloc();
+	request->headers = dict_constructor();
 	//// Use the queue to further extract key value pairs.
 	for (int i = 0; i < headers.length - 1; i++) {
 		char* header = (char*)(iterate(&headers, i))->data;
@@ -203,7 +210,7 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 				value++;
 			}
 			// Push the key value pairs into the request's headers dictionary.
-			addItem(request->headers, key, value);
+			insert_item(&(request->headers), key, value, sizeof(request->headers));
 			// Collect the next field from the queue.
 		}
 	}
@@ -214,7 +221,7 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
 {
 	const int max_response_size = 262144;
-	char response[max_response_size];
+	char response[max_response_size] = "";
 	char content_len_buffer[10];
 
 	// Build HTTP response and store it in response
@@ -236,7 +243,7 @@ Response send_response(SOCKET new_socket, const char* header, const char* conten
 		WSACleanup();
 	}
 
-	struct Response res;
+	Response res;
 	res.body = (char*)malloc(sizeof(body));
 	res.content_type = (char*)malloc(sizeof(content_type));
 	res.header = (char*)malloc(sizeof(header));
