@@ -94,6 +94,14 @@ int get(const char* uri, void (*callback)(Request*, Response*)) {
 	return 0;
 }
 
+int post(const char* uri, void (*callback)(Request*, Response*)) {
+	char buffer[1024];
+	strcpy(buffer, "POST");
+	strcat(buffer, uri);
+	insert_item(&ROUTES, buffer, callback, sizeof(ROUTES));
+	return 0;
+}
+
 void accept_request(SOCKET new_socket) {
 	Request req = handle_http_request(new_socket);
 	char* html = render_template("login.html");
@@ -139,31 +147,36 @@ char* render_template(const char* path) {
 Request handle_http_request(SOCKET new_socket)
 {
 	const int request_buffer_size = 65536; // 64K
-	static char request[request_buffer_size];
+	static char request_string[request_buffer_size];
+	char requested[request_buffer_size];
 
 	// Read request
-	int bytes_recvd = recv(new_socket, request, request_buffer_size - 1, 0);
+	int bytes_recvd = recv(new_socket, request_string, request_buffer_size - 1, 0);
 
 	if (bytes_recvd < 0) {
 		perror("recv");
 	}
 
-	for (int i = 0; i < strlen(request) - 2; i++)
+	strcpy(requested, request_string);
+	int len = strlen(requested) - 2;
+	for (int i = 0; i < len; i++)
 	{
-		if (request[i] == '\n' && request[i + 1] == '\n')
+		if (requested[i] == '\r' && requested[i + 1] == '\n' && requested[i + 2] == '\r' && requested[i + 3] == '\n')
 		{
 			// This makes it possible to separate header fields from the request body.
-			request[i + 1] = '|';
+			requested[i + 1] = '|';
 		}
 	}
 
 	// Separate the request string.
-	char* request_line = strtok(request, "\n");
+	char* request_line = strtok(requested, "\n");
 	char* header_fields = strtok(NULL, "|");
 	char* body = strtok(NULL, "|");
+	body += 2;
 	struct Request req;
 	extract_request_line_fields(&req, request_line, strlen(request_line));
-	if (header_fields != NULL) extract_header_fields(&req, header_fields, strlen(header_fields));
+	extract_header_fields(&req, header_fields, strlen(header_fields));
+	extract_body(&req, body);
 	return req;
 }
 
@@ -197,7 +210,7 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 	//// Initialize the request's headers dictionary.
 	request->headers = dict_constructor();
 	//// Use the queue to further extract key value pairs.
-	for (int i = 0; i < headers.length - 1; i++) {
+	for (int i = 0; i < headers.length; i++) {
 		char* header = (char*)(iterate(&headers, i))->data;
 		char* key = strtok(header, ":");
 		char* value = strtok(NULL, "\r");
@@ -217,6 +230,57 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 
 	//// Destroy the linked-list
 }
+
+// Parses the body according to the content type specified in the header fields.
+void extract_body(Request* request, char* body) {
+	// Check what content type needs to be parsed
+	char* content_type = (char*)get_item(&(request->headers), (char*)"Content-Type");
+	char* _body = (char*)malloc(sizeof(strlen(body)));
+	strcpy(_body, body);
+	// Initialize the body_fields dictionary.
+	request->body = dict_constructor();
+
+	if (content_type) {
+		if (strcmp(content_type, "application/x-www-form-urlencoded") == 0) {
+			// Save each line of the input into a linked-list.
+			LinkedList fields = linked_list_constructor();
+			char* field = strtok(_body, "&");
+			int i = 0;
+
+			while (field)
+			{
+				insert(&fields, i++, field, strlen(field) * sizeof(char));
+				field = strtok(NULL, "&");
+			}
+
+			for (int i = 0; i < fields.length; i++) {
+				char* header = (char*)(iterate(&fields, i))->data;
+				char* key = strtok(header, "=");
+				char* value = strtok(NULL, "\r");
+
+				if (value)
+				{
+					// Remove leading white spaces.
+					if (value[0] == ' ')
+					{
+						value++;
+					}
+					// Push the key value pairs into the request's headers dictionary.
+					insert_item(&(request->body), key, value, sizeof(request->body));
+					// Collect the next field from the queue.
+				}
+			}
+		}
+		else
+		{
+			// Save the data as a single key value pair.
+			insert_item(&(request->body), (char*)"data", body, sizeof(strlen(body)));
+		}
+		// Set the request's body dictionary.
+
+	}
+}
+
 
 Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length)
 {

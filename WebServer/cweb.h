@@ -14,7 +14,7 @@ typedef struct Request {
 	Dictionary headers;
 	char* content_type;
 	char* http_version;
-	void* body;
+	Dictionary body;
 	char* ip;
 } Request;
 
@@ -30,6 +30,8 @@ int start_server(int PORT = 8080, void (*callback)(void) = NULL);
 
 int get(const char* uri, void (*callback)(Request*, Response*));
 
+int post(const char* uri, void (*callback)(Request*, Response*));
+
 char* render_template(const char* file_path);
 
 char** parseString(char* cmd);
@@ -39,6 +41,8 @@ struct Request handle_http_request(SOCKET new_socket);
 void extract_request_line_fields(struct Request* request, char* request_line, size_t length);
 
 void extract_header_fields(Request* request, char* header_fields, size_t length);
+
+void extract_body(Request* request, char* body);
 
 void accept_request(SOCKET new_socket);
 

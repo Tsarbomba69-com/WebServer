@@ -13,7 +13,7 @@ Pair pair_constructor(char* key, void* value, unsigned long size)
 	// Allocate space for the data if it is of a supported type
 	node.value = value;
 	node.key = (char*)malloc(sizeof(key));
-	memcpy(node.key, key, sizeof(key));
+	strcpy(node.key, key);
 	// Initialize the pointers.
 	node.next = NULL;
 	return node;
@@ -52,7 +52,14 @@ void insert_item(Dictionary* dict, char* key, void* value, unsigned long size) {
 	}
 	else
 	{
-		dict->head->next = node_to_insert;
+		Pair* cursor = dict->head;
+		// Step through the list until the desired index is reached.
+		do {
+			if (cursor->next == NULL) {
+				cursor->next = node_to_insert;
+				break;
+			}
+		} while (cursor = cursor->next);
 	}
 	// Increment the list length.
 	dict->length += 1;

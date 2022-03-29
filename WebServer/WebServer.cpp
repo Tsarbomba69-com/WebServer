@@ -14,12 +14,17 @@ void business_rule(Request* req, Response* res) {
 	printf("METHOD: %s\n", req->method);
 	printf("uri: %s\n", req->uri);
 	printf("Host: %s\n", get_item(&(req->headers), (char*)"Host"));
+	
+	if (strcmp(req->method, "POST") == 0) {
+		printf("morada: %s\n", (char*)get_item(&(req->body), (char*)"morada"));
+	}
 }
 
 
 
 int main() {
 	get("/", business_rule);
+	post("/myPost", business_rule);
 	start_server(DEFAULT_PORT, log);
 	return EXIT_SUCCESS;
 }

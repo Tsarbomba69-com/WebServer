@@ -13,8 +13,9 @@ Node node_constructor(void* data, unsigned long size)
 	// Create a Node instance to be returned
 	struct Node node;
 	// Allocate space for the data if it is of a supported type
-	node.data = malloc(size);
-	memcpy(node.data, data, size);
+	node.data = data;
+	//memset(node.data, 0, size);
+	//memcpy(node.data, data, size);
 	// Initialize the pointers.
 	node.next = NULL;
 	node.previous = NULL;
