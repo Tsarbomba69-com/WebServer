@@ -14,16 +14,24 @@ void business_rule(Request* req, Response* res) {
 	printf("METHOD: %s\n", req->method);
 	printf("uri: %s\n", req->uri);
 	printf("Host: %s\n", get_item(&(req->headers), (char*)"Host"));
-	
+
 	if (strcmp(req->method, "POST") == 0) {
 		printf("morada: %s\n", (char*)get_item(&(req->body), (char*)"morada"));
 	}
 }
 
+void home(Request* req, Response* res) {
+	send_response(*res, "<form method=\"post\" enctype=\"multipart/form-data\">\r\n"
+		"<p>Title: <input type=\"text\" name=\"title\"/></p>\r\n"
+		"<p>Image : <input type=\"file\" name=\"image\"/></p>\r\n"
+		"<p><input type=\"submit\" value=\"Upload\"/></p>\r\n"
+		"</form>\n\r");
+}
+
 
 
 int main() {
-	get("/", business_rule);
+	get("/", home);
 	post("/myPost", business_rule);
 	start_server(DEFAULT_PORT, log);
 	return EXIT_SUCCESS;

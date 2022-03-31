@@ -35,3 +35,7 @@ Node* iterate(LinkedList* linked_list, int index);
 void remove_node(LinkedList* linked_list, int index);
 
 LinkedList linked_list_constructor(void);
+
+void linked_list_destructor(LinkedList* linked_list);
+
+void* get_list_item(LinkedList* linked_list, int index);

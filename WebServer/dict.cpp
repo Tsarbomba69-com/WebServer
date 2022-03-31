@@ -12,8 +12,8 @@ Pair pair_constructor(char* key, void* value, unsigned long size)
 	Pair node;
 	// Allocate space for the data if it is of a supported type
 	node.value = value;
-	node.key = (char*)malloc(sizeof(key));
-	strcpy(node.key, key);
+	node.key = (char*)malloc(strlen(key));
+	strcpy_s(node.key, strlen(key) + 1, key);
 	// Initialize the pointers.
 	node.next = NULL;
 	return node;

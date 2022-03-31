@@ -20,6 +20,7 @@ typedef struct Request {
 
 typedef struct Response {
 	int status_code;
+	SOCKET socket;
 	char* header;
 	char* content_type;
 	void* body;
@@ -36,7 +37,7 @@ char* render_template(const char* file_path);
 
 char** parseString(char* cmd);
 
-struct Request handle_http_request(SOCKET new_socket);
+Request handle_http_request(SOCKET new_socket);
 
 void extract_request_line_fields(struct Request* request, char* request_line, size_t length);
 
@@ -46,5 +47,6 @@ void extract_body(Request* request, char* body);
 
 void accept_request(SOCKET new_socket);
 
-Response send_response(SOCKET new_socket, const char* header, const char* content_type, void* body, int content_length);
+Response create_response(SOCKET new_socket, const char* header, const char* content_type);
 
+void send_response(Response res, const char* body);

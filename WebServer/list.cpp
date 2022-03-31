@@ -63,6 +63,14 @@ void insert(LinkedList* linked_list, int index, void* data, unsigned long size) 
 	linked_list->length += 1;
 }
 
+void linked_list_destructor(LinkedList* linked_list)
+{
+	for (int i = 0; i < linked_list->length; i++)
+	{
+		remove_node(linked_list, 0);
+	}
+}
+
 // The remove function removes a node from the linked list.
 void remove_node(LinkedList* linked_list, int index)
 {
@@ -70,7 +78,7 @@ void remove_node(LinkedList* linked_list, int index)
 	if (index == 0)
 	{
 		// Collect the node to be removed.
-		struct Node* node_to_remove = linked_list->head;
+		Node* node_to_remove = linked_list->head;
 		// Define the new head of the list.
 		if (node_to_remove)
 		{
@@ -97,7 +105,7 @@ void remove_node(LinkedList* linked_list, int index)
 Node* create_node(void* data, unsigned long size)
 {
 	// Allocate space.
-	struct Node* new_node = (struct Node*)malloc(sizeof(struct Node));
+	Node* new_node = (Node*)malloc(sizeof(Node));
 	// Call the constructor.
 	*new_node = node_constructor(data, size);
 	return new_node;
@@ -121,4 +129,8 @@ Node* iterate(LinkedList* linked_list, int index)
 		cursor = cursor->next;
 	}
 	return cursor;
+}
+
+void* get_list_item(LinkedList* linked_list, int index) {
+	return iterate(linked_list, index)->data;
 }
