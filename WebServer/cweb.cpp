@@ -116,6 +116,7 @@ void accept_request(SOCKET new_socket) {
 	strcat(buffer, req.uri);
 	void* callback = (void*)get_item(&ROUTES, buffer);
 	if (callback)((void(*)(Request*, Response*))callback)(&req, &res);
+	else send_response(res, "Not Found");
 }
 
 char* render_template(const char* path) {
@@ -162,8 +163,7 @@ Request handle_http_request(SOCKET new_socket)
 		if (requested[i] == '\r' && requested[i + 1] == '\n' && requested[i + 2] == '\r' && requested[i + 3] == '\n')
 		{
 			// This makes it possible to separate header fields from the request body.
-			requested[i] = '|';
-			requested[i + 1] = '|';
+			requested[i + 3] = '|';
 		}
 	}
 
@@ -171,14 +171,13 @@ Request handle_http_request(SOCKET new_socket)
 	char* request_line = strtok(requested, "\n");
 	char* header_fields = strtok(NULL, "|");
 	char* body = strtok(NULL, "|");
-	body += 2;
 	Request req;
 	extract_request_line_fields(&req, request_line, strlen(request_line));
 	extract_header_fields(&req, header_fields, strlen(header_fields));
 	extract_body(&req, body);
 	memset(request_line, 0, sizeof(request_line));
 	memset(header_fields, 0, sizeof(header_fields));
-	memset(body, 0, sizeof(body));
+	if (body) memset(body, 0, sizeof(body));
 	memset(request_string, 0, sizeof(request_string));
 	return req;
 }
@@ -238,7 +237,7 @@ void extract_header_fields(Request* request, char* header_fields, size_t length)
 // Parses the body according to the content type specified in the header fields.
 void extract_body(Request* request, char* body) {
 	// Check what content type needs to be parsed
-	if (strlen(body) == 0) return;
+	if (!body) return;
 	char* content_type = (char*)get_item(&(request->headers), (char*)"Content-Type");
 	char* _body = (char*)calloc(strlen(body), sizeof(char));
 	strcpy_s(_body, (strlen(body) + 1) * sizeof(char), body);
