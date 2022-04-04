@@ -9,8 +9,8 @@
 #include "list.h"
 
 typedef struct Request {
-	char* method;
-	char* uri;
+	char* method = NULL;
+	char* uri = NULL;
 	Dictionary headers;
 	char* content_type;
 	char* http_version;
@@ -33,15 +33,15 @@ int get(const char* uri, void (*callback)(Request*, Response*));
 
 int post(const char* uri, void (*callback)(Request*, Response*));
 
-char* render_template(const char* file_path);
+char* render_template(char* file_path);
 
 char** parseString(char* cmd);
 
 Request handle_http_request(SOCKET new_socket);
 
-void extract_request_line_fields(struct Request* request, char* request_line, size_t length);
+void extract_request_line_fields(struct Request* request, char* request_line);
 
-void extract_header_fields(Request* request, char* header_fields, size_t length);
+void extract_header_fields(Request* request, char* header_fields);
 
 void extract_body(Request* request, char* body);
 
@@ -49,4 +49,4 @@ void accept_request(SOCKET new_socket);
 
 Response create_response(SOCKET new_socket, const char* header, const char* content_type);
 
-void send_response(Response res, const char* body);
+void send_response(Response res, char* body);

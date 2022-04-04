@@ -104,22 +104,34 @@ int post(const char* uri, void (*callback)(Request*, Response*)) {
 
 void accept_request(SOCKET new_socket) {
 	Request req = handle_http_request(new_socket);
-	char* html = render_template("login.html");
 	Response res = create_response(
 		new_socket,
 		"Connection: keep-alive\r\n",
 		"Content-Type: text/html\r\n"
 	);
-	memset(html, 0, sizeof(html));
 	char buffer[1024];
-	strcpy_s(buffer, strlen(req.method) + 1, req.method);
+	if (req.method) strcpy_s(buffer, strlen(req.method) + 1, req.method);
 	strcat(buffer, req.uri);
 	void* callback = (void*)get_item(&ROUTES, buffer);
-	if (callback)((void(*)(Request*, Response*))callback)(&req, &res);
-	else send_response(res, "Not Found");
+	char* uri = (char*)malloc(strlen(req.uri) + 1);
+	strcpy(uri, req.uri);
+
+	for (int i = 0; i < strlen(req.uri); i++) {
+		if (req.uri[i] == '.') {
+			send_response(res, render_template(++uri));
+			return;
+		}
+	}
+
+	if (callback) {
+		((void(*)(Request*, Response*))callback)(&req, &res);
+	}
+	else {
+		send_response(res, (char*)"Not Found");
+	}
 }
 
-char* render_template(const char* path) {
+char* render_template(char* path) {
 	FILE* file = NULL;
 	int err;
 
@@ -128,10 +140,10 @@ char* render_template(const char* path) {
 		perror("Error: ");
 	}
 	else {
-#define BUF_SIZE 65536
+		const int BUF_SIZE = 65536;
 		char string[100];
 		static char buffer[BUF_SIZE];
-		char chr;
+		strcpy_s(buffer, BUF_SIZE, "");
 
 		while (fgets(string, sizeof(string), file)) //Pega cada linha do texto
 		{
@@ -146,7 +158,7 @@ char* render_template(const char* path) {
 Request handle_http_request(SOCKET new_socket)
 {
 	const int request_buffer_size = 65536; // 64K
-	static char request_string[request_buffer_size];
+	static char request_string[request_buffer_size] = "";
 	char requested[request_buffer_size];
 
 	// Read request
@@ -172,20 +184,21 @@ Request handle_http_request(SOCKET new_socket)
 	char* header_fields = strtok(NULL, "|");
 	char* body = strtok(NULL, "|");
 	Request req;
-	extract_request_line_fields(&req, request_line, strlen(request_line));
-	extract_header_fields(&req, header_fields, strlen(header_fields));
+	extract_request_line_fields(&req, request_line);
+	extract_header_fields(&req, header_fields);
 	extract_body(&req, body);
-	memset(request_line, 0, sizeof(request_line));
-	memset(header_fields, 0, sizeof(header_fields));
 	if (body) memset(body, 0, sizeof(body));
 	memset(request_string, 0, sizeof(request_string));
 	return req;
 }
 
-void extract_request_line_fields(struct Request* request, char* request_line, size_t length) {
+void extract_request_line_fields(struct Request* request, char* request_line) {
+	if (!request_line) return;
+	size_t length = strlen(request_line);
 	// Copy the string literal into a local instance.
 	char* fields = (char*)malloc(length);
 	strcpy_s(fields, strlen(request_line) + 1, request_line);
+	memset(request_line, 0, sizeof(request_line));
 	// Separate the string on spaces for each section.
 	char* method = strtok(fields, " ");
 	char* uri = strtok(NULL, " ");
@@ -195,9 +208,12 @@ void extract_request_line_fields(struct Request* request, char* request_line, si
 	request->http_version = http_version;
 }
 
-void extract_header_fields(Request* request, char* header_fields, size_t length) {
+void extract_header_fields(Request* request, char* header_fields) {
+	if (!header_fields) return;
+	size_t length = strlen(header_fields);
 	char* fields = (char*)malloc(strlen(header_fields));
 	strcpy_s(fields, strlen(header_fields) + 1, header_fields);
+	memset(header_fields, 0, sizeof(header_fields));
 
 	// Save each line of the input into a linked-list.
 	LinkedList headers = linked_list_constructor();
@@ -303,7 +319,8 @@ Response create_response(SOCKET new_socket, const char* header, const char* cont
 	return res;
 }
 
-void send_response(Response res, const char* body) {
+void send_response(Response res, char* body) {
+	if (!body) return;
 	const int max_response_size = 262144;
 	char response[max_response_size] = "";
 	char content_len_buffer[10];

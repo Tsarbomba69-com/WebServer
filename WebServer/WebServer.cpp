@@ -21,17 +21,20 @@ void business_rule(Request* req, Response* res) {
 }
 
 void home(Request* req, Response* res) {
-	send_response(*res, "<form method=\"post\" enctype=\"multipart/form-data\">\r\n"
+	send_response(*res, (char*)"<form method=\"post\" enctype=\"multipart/form-data\">\r\n"
 		"<p>Title: <input type=\"text\" name=\"title\"/></p>\r\n"
 		"<p>Image : <input type=\"file\" name=\"image\"/></p>\r\n"
 		"<p><input type=\"submit\" value=\"Upload\"/></p>\r\n"
 		"</form>\n\r");
 }
 
-
+void login(Request* req, Response* res) {
+	send_response(*res, render_template((char*)"login.html"));
+}
 
 int main() {
 	get("/", home);
+	get("/login", login);
 	post("/myPost", business_rule);
 	start_server(DEFAULT_PORT, log);
 	return EXIT_SUCCESS;
